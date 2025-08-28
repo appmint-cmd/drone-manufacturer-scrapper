@@ -1,0 +1,171 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Search Companies - Drone Directory</title>
+    <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
+</head>
+<body class="bg-gray-50">
+    <div class="container mx-auto py-8">
+        <div class="flex justify-between items-center mb-8">
+            <h1 class="text-3xl font-bold">Search Companies</h1>
+            <a href="/ui/" class="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700 transition-colors">
+                ← Back to Dashboard
+            </a>
+        </div>
+
+        <!-- Search Form -->
+        <div class="bg-white rounded-lg shadow-md p-6 mb-8">
+            <form method="get" action="/search" class="flex flex-col md:flex-row gap-4">
+                <input 
+                    name="query" 
+                    type="text" 
+                    placeholder="Search by company name, category, email, phone, or description..." 
+                    class="border rounded px-4 py-2 flex-1 focus:ring-2 focus:ring-green-500 focus:border-green-500"
+                    value="{{ query }}"
+                >
+                <button type="submit" class="bg-green-600 text-white px-6 py-2 rounded hover:bg-green-700 transition-colors">
+                    🔍 Search
+                </button>
+            </form>
+        </div>
+
+        <!-- Search Results -->
+        <div class="bg-white rounded-lg shadow-md overflow-hidden">
+            <div class="px-6 py-4 border-b border-gray-200">
+                <h2 class="text-xl font-semibold">
+                    {% if query %}
+                        Search Results for "{{ query }}" ({{ results|length }} found)
+                    {% else %}
+                        All Companies ({{ results|length }} total)
+                    {% endif %}
+                </h2>
+            </div>
+            
+            {% if results %}
+            <div class="overflow-x-auto">
+                <table class="min-w-full divide-y divide-gray-200">
+                    <thead class="bg-gray-50">
+                        <tr>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Name</th>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Website</th>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Category</th>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Contact Info</th>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody class="bg-white divide-y divide-gray-200">
+                        {% for company in results %}
+                        <tr class="hover:bg-gray-50 transition-colors">
+                            <td class="px-6 py-4 whitespace-nowrap">
+                                <div class="text-sm font-medium text-gray-900">{{ company.name or 'N/A' }}</div>
+                            </td>
+                            <td class="px-6 py-4 whitespace-nowrap">
+                                {% if company.website %}
+                                    <a href="{{ company.website }}" class="text-blue-600 hover:text-blue-800 underline" target="_blank" rel="noopener noreferrer">
+                                        {{ company.website[:50] }}{% if company.website|length > 50 %}...{% endif %}
+                                    </a>
+                                {% else %}
+                                    <span class="text-gray-400">N/A</span>
+                                {% endif %}
+                            </td>
+                            <td class="px-6 py-4 whitespace-nowrap">
+                                <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
+                                    {{ company.category or 'Uncategorized' }}
+                                </span>
+                            </td>
+                            <td class="px-6 py-4 whitespace-nowrap">
+                                <div class="text-sm text-gray-900">
+                                    {% if company.email %}
+                                        <div class="mb-1">
+                                            <span class="font-medium">📧</span> {{ company.email[:30] }}{% if company.email|length > 30 %}...{% endif %}
+                                        </div>
+                                    {% endif %}
+                                    {% if company.phone %}
+                                        <div>
+                                            <span class="font-medium">📞</span> {{ company.phone[:20] }}{% if company.phone|length > 20 %}...{% endif %}
+                                        </div>
+                                    {% endif %}
+                                </div>
+                            </td>
+                            <td class="px-6 py-4 whitespace-nowrap text-sm font-medium">
+                                <button 
+                                    onclick="showDetails('{{ company.name|e }}', '{{ company.website|e }}', '{{ company.category|e }}', '{{ company.description|e }}', '{{ company.email|e }}', '{{ company.phone|e }}', '{{ company.address|e }}')" 
+                                    class="bg-gray-700 text-white px-3 py-1 rounded hover:bg-gray-800 transition-colors"
+                                >
+                                    👁️ View Details
+                                </button>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+            {% else %}
+            <div class="px-6 py-12 text-center text-gray-500">
+                {% if query %}
+                    <div class="text-lg">No companies found matching "{{ query }}"</div>
+                    <div class="text-sm mt-2">Try a different search term or <a href="/ui/" class="text-blue-600 hover:underline">go back to dashboard</a></div>
+                {% else %}
+                    <div class="text-lg">No companies found in the directory yet.</div>
+                    <div class="text-sm mt-2"><a href="/ui/" class="text-blue-600 hover:underline">Go to dashboard</a> to add companies!</div>
+                {% endif %}
+            </div>
+            {% endif %}
+        </div>
+
+        <!-- Details Modal -->
+        <div id="detailsModal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center hidden z-50">
+            <div class="bg-white rounded-lg p-6 w-full max-w-2xl mx-4 max-h-[90vh] overflow-y-auto">
+                <div class="flex justify-between items-center mb-4">
+                    <h2 class="text-xl font-bold" id="modalName"></h2>
+                    <button onclick="closeModal()" class="text-gray-400 hover:text-gray-600 text-2xl">&times;</button>
+                </div>
+                <div class="space-y-3">
+                    <div><strong>Website:</strong> <span id="modalWebsite"></span></div>
+                    <div><strong>Category:</strong> <span id="modalCategory"></span></div>
+                    <div><strong>Description:</strong> <span id="modalDescription"></span></div>
+                    <div><strong>Emails:</strong> <span id="modalEmail"></span></div>
+                    <div><strong>Phones:</strong> <span id="modalPhone"></span></div>
+                    <div><strong>Addresses:</strong> <span id="modalAddress"></span></div>
+                </div>
+                <button onclick="closeModal()" class="mt-6 bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700 transition-colors">
+                    Close
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        function showDetails(name, website, category, description, email, phone, address) {
+            document.getElementById('modalName').innerText = name || 'N/A';
+            document.getElementById('modalWebsite').innerText = website || 'N/A';
+            document.getElementById('modalCategory').innerText = category || 'N/A';
+            document.getElementById('modalDescription').innerText = description || 'N/A';
+            document.getElementById('modalEmail').innerText = email || 'N/A';
+            document.getElementById('modalPhone').innerText = phone || 'N/A';
+            document.getElementById('modalAddress').innerText = address || 'N/A';
+            document.getElementById('detailsModal').classList.remove('hidden');
+        }
+        
+        function closeModal() {
+            document.getElementById('detailsModal').classList.add('hidden');
+        }
+        
+        // Close modal when clicking outside
+        document.getElementById('detailsModal').addEventListener('click', function(e) {
+            if (e.target === this) {
+                closeModal();
+            }
+        });
+        
+        // Close modal with Escape key
+        document.addEventListener('keydown', function(e) {
+            if (e.key === 'Escape') {
+                closeModal();
+            }
+        });
+    </script>
+</body>
+</html>
